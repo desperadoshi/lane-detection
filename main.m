@@ -1,5 +1,5 @@
 clear;clc;
-ImgNo = 07;
+ImgNo = 08;
 % The only input parameter is the image number.
 % However, the parameters depend on the image we choose.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,27 +126,23 @@ end
 ImgPath = strcat('./img/', sprintf('%02d', ImgNo));
 ImgPath = strcat(ImgPath, '.jpg');
 Img_RGB = imread(ImgPath);
-Img_Size = size(Img_RGB);
 % RGB to Gray
 Img_Gray = rgb2gray(Img_RGB);
-% Crop the image
-ImgTarget = Img_Gray(round(Img_Size(1)*ScaleL):round(Img_Size(1)*ScaleH), :, :);
 % Filter pixels
-I = ImgTarget(1:PixelGap:end, 1:PixelGap:end);
+ICoarse_Gray = Img_Gray(1:PixelGap:end, 1:PixelGap:end);
+% Crop the image
+Img_Size = size(ICoarse_Gray);
+ICrop_Gray = ICoarse_Gray(round(Img_Size(1)*ScaleL):round(Img_Size(1)*ScaleH), :);
+I = ICrop_Gray;
+
 figure
-PlotRowN = 2;
-PlotColN = 1;
-subplot(PlotRowN,PlotColN,1);
-imshow(I);
+imshow(Img_RGB);
 
 BW = edge(I, 'canny', Thresh_Edge);
-subplot(PlotRowN,PlotColN,2); hold on;
-imshow(BW);
 % Plot the location of the observer.
 BW_Size = size(BW);
 PtsCenterX = round(BW_Size(2)/2);
 PtsCenterY = BW_Size(1);
-plot(PtsCenterX, PtsCenterY, 'o','LineWidth',2,'Color','blue');
 
 % Hough transform
 [H, theta, rho] = hough(BW, ...
@@ -177,10 +173,10 @@ heights = zeros(length(lines), 1);
 
 for k = 1:length(lines)
     EndPts(k,:,:) = [lines(k).point1; lines(k).point2];
-    plot(EndPts(k,:,1),EndPts(k,:,2),'LineWidth',2,'Color','green');
+    % plot(EndPts(k,:,1),EndPts(k,:,2),'LineWidth',2,'Color','green');
     % Plot beginnings and ends of lines
-    plot(EndPts(k,1,1),EndPts(k,1,2),'x','LineWidth',2,'Color','yellow');
-    plot(EndPts(k,2,1),EndPts(k,2,2),'x','LineWidth',2,'Color','red');
+    % plot(EndPts(k,1,1),EndPts(k,1,2),'x','LineWidth',2,'Color','yellow');
+    % plot(EndPts(k,2,1),EndPts(k,2,2),'x','LineWidth',2,'Color','red');
     c = [EndPts(k,1,1)-EndPts(k,2,1), EndPts(k,1,2)-EndPts(k,2,2)];
     c_mag = sqrt((c(1))^2 + (c(2))^2);
     a = [EndPts(k,1,1)-PtsCenterX, EndPts(k,1,2)-PtsCenterY];
@@ -190,11 +186,6 @@ for k = 1:length(lines)
     angles_ac(k) = acos(dot(a, c) / (a_mag * c_mag));
     angles_hor(k) = atan(c(2)/c(1));
     heights(k) = a_mag * sin(angles_ac(k));
-%     disp(k)
-%     disp(lines_length(k))
-%     disp(angles_hor(k) / pi * 180)
-%     disp(heights(k))
-%     pause
 end
 
 % Divide the whole series of lines into 2 classes, i.e. Left and Right, in
@@ -204,11 +195,11 @@ anglesR_Ind = find(angles_hor*180/pi > 0);
 [LineL_height, LineL_Ind] = min(heights(anglesL_Ind));
 [LineR_height, LineR_Ind] = min(heights(anglesR_Ind));
 k = anglesL_Ind(LineL_Ind);
-plot(EndPts(k,:,1),EndPts(k,:,2),'LineWidth',2,'Color','blue');
+hold on; plot(EndPts(k,:,1)*PixelGap,(EndPts(k,:,2)+round(Img_Size(1)*ScaleL))*PixelGap,'LineWidth',12,'Color','red');
 disp('Angle of the left line')
 disp(angles_hor(k)*180/pi);
 k = anglesR_Ind(LineR_Ind);
-plot(EndPts(k,:,1),EndPts(k,:,2),'LineWidth',2,'Color','blue');
+hold on; plot(EndPts(k,:,1)*PixelGap,(EndPts(k,:,2)+round(Img_Size(1)*ScaleL))*PixelGap,'LineWidth',12,'Color','red');
 disp('Angle of the right line')
 disp(angles_hor(k)*180/pi);
 
